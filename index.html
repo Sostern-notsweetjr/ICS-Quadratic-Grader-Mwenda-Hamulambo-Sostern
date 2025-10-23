@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ICS Quadratic Solver & Grader</title>
+<style>
+  :root {
+    --primary: #0066cc;
+    --accent: #0099ff;
+    --danger: #d90429;
+    --light-bg: #f9f9f9;
+    --card-bg: #fff;
+    --radius: 10px;
+  }
+
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--light-bg);
+    margin: 0;
+    padding: 0;
+  }
+
+  header {
+    text-align: center;
+    background: var(--primary);
+    color: white;
+    padding: 1.5rem;
+  }
+
+  main {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.8rem;
+  }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+  }
+
+  h2 {
+    color: var(--primary);
+    margin-top: 0;
+  }
+
+  label {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  input[type="number"] {
+    width: 100%;
+    padding: 0.6rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 5px rgba(0, 153, 255, 0.3);
+  }
+
+  .error {
+    color: var(--danger);
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .buttons {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  button {
+    border: none;
+    border-radius: var(--radius);
+    padding: 0.7rem 1.4rem;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: transform 0.15s, background-color 0.3s;
+  }
+
+  button:hover {
+    transform: scale(1.05);
+  }
+
+  .primary {
+    background: var(--primary);
+    color: white;
+  }
+
+  .secondary {
+    background: #ddd;
+  }
+
+  .result {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #e9f5ff;
+    border-left: 5px solid var(--primary);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    animation: fadeIn 0.5s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+  }
+
+  footer {
+    text-align: center;
+    color: #555;
+    padding: 1rem;
+    background: #f1f1f1;
+    font-size: 0.9rem;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>ICS Quadratic Solver & Grader</h1>
+  <p>Solves <strong>ax² + bx + c = 0</strong> and converts scores (0–100) to letter grades</p>
+</header>
+
+<main>
+
+  <!-- Quadratic Solver -->
+  <div class="card" id="quadraticCard">
+    <h2>Quadratic Equation Solver</h2>
+    <div class="grid">
+      <div>
+        <label for="a">a (≠0)</label>
+        <input id="a" type="number" placeholder="e.g. 1" step="any" />
+        <div id="aError" class="error"></div>
+      </div>
+      <div>
+        <label for="b">b</label>
+        <input id="b" type="number" placeholder="e.g. -3" step="any" />
+        <div id="bError" class="error"></div>
+      </div>
+      <div>
+        <label for="c">c</label>
+        <input id="c" type="number" placeholder="e.g. 2" step="any" />
+        <div id="cError" class="error"></div>
+      </div>
+    </div>
+
+    <div class="buttons">
+      <button id="solveBtn" class="primary">Compute</button>
+      <button id="resetQuad" class="secondary">Reset</button>
+    </div>
+
+    <div id="quadResult" class="result" style="display:none;"></div>
+  </div>
+
+  <!-- Grade Check -->
+  <div class="card" id="gradeCard">
+    <h2>Grade Check</h2>
+    <label for="score">Score (0–100)</label>
+    <input id="score" type="number" placeholder="Enter score" min="0" max="100" />
+    <div id="scoreError" class="error"></div>
+
+    <div class="buttons">
+      <button id="gradeBtn" class="primary">Get Grade</button>
+      <button id="resetGrade" class="secondary">Reset</button>
+    </div>
+
+    <div id="gradeResult" class="result" style="display:none;"></div>
+  </div>
+</main>
+
+<footer>
+  &copy; 2025 | Built for ICT251 Web Technologies Assignment — Mwenda Hamulambo Sostern
+</footer>
+
+<script>
+/* ---------- Quadratic Solver ---------- */
+const a = document.getElementById("a");
+const b = document.getElementById("b");
+const c = document.getElementById("c");
+const solveBtn = document.getElementById("solveBtn");
+const quadResult = document.getElementById("quadResult");
+
+const errors = {
+  a: document.getElementById("aError"),
+  b: document.getElementById("bError"),
+  c: document.getElementById("cError")
+};
+
+function clearQuad() {
+  [a,b,c].forEach(el => el.value = "");
+  Object.values(errors).forEach(e => e.textContent = "");
+  quadResult.style.display = "none";
+}
+
+function formatNum(num) {
+  return Number(num.toFixed(4)).toString();
+}
+
+solveBtn.addEventListener("click", () => {
+  Object.values(errors).forEach(e => e.textContent = "");
+  quadResult.style.display = "none";
+
+  if (a.value === "" || b.value === "" || c.value === "") {
+    if (a.value === "") errors.a.textContent = "Enter a value.";
+    if (b.value === "") errors.b.textContent = "Enter a value.";
+    if (c.value === "") errors.c.textContent = "Enter a value.";
+    return;
+  }
+
+  const A = parseFloat(a.value), B = parseFloat(b.value), C = parseFloat(c.value);
+  if (isNaN(A) || isNaN(B) || isNaN(C)) {
+    if (isNaN(A)) errors.a.textContent = "Invalid number.";
+    if (isNaN(B)) errors.b.textContent = "Invalid number.";
+    if (isNaN(C)) errors.c.textContent = "Invalid number.";
+    return;
+  }
+
+  if (A === 0) {
+    errors.a.textContent = "a must not be 0.";
+    return;
+  }
+
+  const D = B*B - 4*A*C;
+  let resultText = `<strong>Discriminant (D)</strong> = ${formatNum(D)}<br>`;
+
+  if (D > 0) {
+    const r1 = (-B + Math.sqrt(D)) / (2*A);
+    const r2 = (-B - Math.sqrt(D)) / (2*A);
+    resultText += `Nature: Two distinct real roots.<br>
+      x₁ = ${formatNum(r1)}<br>
+      x₂ = ${formatNum(r2)}`;
+  } else if (D === 0) {
+    const r = -B / (2*A);
+    resultText += `Nature: One repeated real root.<br>
+      x = ${formatNum(r)}`;
+  } else {
+    const real = -B / (2*A);
+    const imag = Math.sqrt(-D) / (2*A);
+    resultText += `Nature: Two complex roots.<br>
+      x₁ = ${formatNum(real)} + ${formatNum(imag)}i<br>
+      x₂ = ${formatNum(real)} - ${formatNum(imag)}i`;
+  }
+
+  quadResult.innerHTML = resultText;
+  quadResult.style.display = "block";
+});
+
+document.getElementById("resetQuad").addEventListener("click", clearQuad);
+
+/* ---------- Grading ---------- */
+const score = document.getElementById("score");
+const gradeBtn = document.getElementById("gradeBtn");
+const gradeResult = document.getElementById("gradeResult");
+const scoreError = document.getElementById("scoreError");
+
+function clearGrade() {
+  score.value = "";
+  scoreError.textContent = "";
+  gradeResult.style.display = "none";
+}
+
+function getGrade(s) {
+  if (s >= 85 && s <= 100) return "A+";
+  if (s >= 75 && s <= 84) return "A";
+  if (s >= 65 && s <= 74) return "B+";
+  if (s >= 60 && s <= 64) return "B";
+  if (s >= 55 && s <= 59) return "C+";
+  if (s >= 50 && s <= 54) return "C";
+  if (s >= 0 && s <= 49) return "D";
+  return null;
+}
+
+gradeBtn.addEventListener("click", () => {
+  scoreError.textContent = "";
+  gradeResult.style.display = "none";
+
+  if (score.value === "") {
+    scoreError.textContent = "Please enter a score.";
+    return;
+  }
+
+  const val = parseInt(score.value);
+  if (isNaN(val) || val < 0 || val > 100) {
+    scoreError.textContent = "Score must be 0–100.";
+    return;
+  }
+
+  const grade = getGrade(val);
+  if (!grade) {
+    scoreError.textContent = "Invalid score range.";
+    return;
+  }
+
+  gradeResult.innerHTML = `<strong>Score ${val} → Grade ${grade}</strong>`;
+  gradeResult.style.display = "block";
+});
+
+document.getElementById("resetGrade").addEventListener("click", clearGrade);
+</script>
+</body>
+</html>
